@@ -43,10 +43,10 @@ async function run() {
         // Connect the client to the server	(optional starting in v4.7)
         await client.connect();
 
-        const classesCollection = await client.db("fashionDesignDB").collection("classes")
-        const usersCollection = await client.db("fashionDesignDB").collection("users")
-        const productCollection = await client.db("fashionDesignDB").collection("products")
-        const paymentCollection = await client.db("fashionDesignDB").collection("payments")
+        const classesCollection = client.db("fashionDesignDB").collection("classes")
+        const usersCollection = client.db("fashionDesignDB").collection("users")
+        const productCollection = client.db("fashionDesignDB").collection("products")
+        const paymentCollection = client.db("fashionDesignDB").collection("payments")
 
         // jwt 
 
@@ -60,7 +60,6 @@ async function run() {
             const email = req.decoded;
             console.log(email);
             const query = {email: email} ;
-            console.log(query)
             const user = await usersCollection.findOne(query);
             if(user?.role !== "admin"){
                 return res.status(401).send({ error: true, message: "forbidden provided"});
@@ -77,7 +76,6 @@ async function run() {
 
         app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
-            console.log(email)
       
             // if(req.decoded.email !== email){
             //   res.send({admin:false})
@@ -153,6 +151,17 @@ async function run() {
             // const result = {instructor: user?.role === 'instructor'}
             res.send(user) ;
         })
+        app.get("/users/instructorClass/:email", async(req, res)=>{
+            const email = req.params.email;
+            console.log(email)
+            // if(req.decoded !==email){
+            //     res.send({instructor: false})
+            // }
+            const query = {instructorEmail: email} ;
+            const user = await classesCollection.find(query).toArray();
+            // const result = {instructor: user?.role === 'instructor'}
+            res.send(user) ;
+        })
 
         app.patch("/users/instructor/:id", async (req, res) =>{
             const id = req.params.id;
@@ -169,32 +178,84 @@ async function run() {
 
         // classes api 
 
-        app.get("/classes", async (req, res) => {
-            const result = await classesCollection.find().sort({ availableSeat: -1 }).limit(6).toArray();
+        // app.get("/classes", async (req, res) => {
+        //     const result = await classesCollection.find().sort({ availableSeat: -1 }).limit(6).toArray();
+        //     res.send(result);
+        // });
+
+
+        // admin apis 
+
+
+           app.patch("/classes/approve/:id", async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                status: "approved",
+                },
+            };
+            const result = await classesCollection.updateOne(filter, updateDoc);
             res.send(result);
-        });
+            });
+
+
+
+            
+            // app.patch("/classes/deny/:id", async (req, res) => {
+            // const id = req.params.id;
+            // const filter = { _id: new ObjectId(id) };
+            // const updateDoc = {
+            //     $set: {
+            //     status: "denied",
+            //     },
+            // };
+            // const result = await classesCollection.updateOne(filter, updateDoc);
+            // res.send(result);
+            // });
+
+
+            app.patch('/classes/feedback/:id', async (req, res) => {
+            const id= req.params.id;
+            const {feedback} = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                feedback: feedback,
+                },
+            };
+            const result = await classesCollection.updateOne(filter, updateDoc);
+            res.send(result);
+            
+            })
+
+        // app.patch("/admin/manageClasses/:id", async (req, res) => {
+        //     const id = req.params.id;
+        //     const filter= {_id: new ObjectId(id)}
+        //     const status = req.headers.status;
+        //     const updateDoc = {
+        //         $set: {
+        //            status: status ==="approve" ? "approved" : "denied",
+        //         }
+        //     }
+
+        //     const result = await classesCollection.updateOne(filter,updateDoc)
+        //     res.send(result);
+
+        // })
 
 
         // products api 
 
 
-        // app.get("/products", async (req, res) => {
-        //     const result = await classesCollection.find().toArray();
-        //     res.send(result);
-        // })
+        app.get("/classes", async (req, res) => {
+            const result = await classesCollection.find().toArray();
+            res.send(result);
+        })
 
         app.get("/products/:email", async(req, res)=>{
             const email = req.params.email;
-            console.log("189", email)
-            // if(!email){
-            //     res.send([])
-            // }
-            // const decodedEmail = req.decoded.email;
-            // if(email !== decodedEmail){
-            //     return res.status(403).send({error: true, message: "Forbidden access"});
-            // }
             const query = {email: email}
-            console.log("198", query);
             const result = await productCollection.find(query).toArray();
             res.send(result)
         } )
@@ -216,6 +277,7 @@ async function run() {
 
 
         // Instructors api 
+
         app.post("/classes", async (req, res) => {
             const newItem = req.body;
             const result = await classesCollection.insertOne(newItem);
@@ -264,7 +326,22 @@ async function run() {
             const query = {_id: {$in: payment.classesItems.map(id => new ObjectId(id))}}
             const deleteResult = await productCollection.deleteMany(query);
 
-            res.send({result,deleteResult});
+            res.send({insertResult,deleteResult});
+        })
+
+
+        app.get("/admin-stats", async (req, res) => {
+            const user = await usersCollection.estimatedDocumentCount();
+            const products = await productCollection.estimatedDocumentCount();
+            const orders = await paymentCollection.estimatedDocumentCount();
+            const payments = await paymentCollection.find().toArray();
+            const revinue = payments.reduce((sum, payment) => sum + payment.price,0) 
+            res.send({
+                revinue,
+                user,
+                products,
+                orders
+            })
         })
 
         // Send a ping to confirm a successful connection
