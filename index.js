@@ -1,4 +1,5 @@
 const express = require("express");
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
@@ -12,13 +13,13 @@ app.use(express.json());
 
 const verifyJWT = (req, res, next) => {
     const authorization = req.headers?.authorization;
-    if(!authorization){
+    if (!authorization) {
         return res.status(401).send({ error: true, message: "Unauthorized token" });
     }
     const token = authorization.split(" ")[1];
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-        if(err){
-            return res.status(401).send({ error: true, message: "Invalid token forbidden"});
+        if (err) {
+            return res.status(401).send({ error: true, message: "Invalid token forbidden" });
         }
         req.decoded = decoded;
         next();
@@ -26,7 +27,7 @@ const verifyJWT = (req, res, next) => {
 }
 
 
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.apl9htr.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -47,36 +48,37 @@ async function run() {
         const usersCollection = client.db("fashionDesignDB").collection("users")
         const productCollection = client.db("fashionDesignDB").collection("products")
         const paymentCollection = client.db("fashionDesignDB").collection("payments")
+        const feturedCollection = client.db("fashionDesignDB").collection("fetured")
 
         // jwt 
 
         app.post("/jwt", (req, res) => {
             const user = req.body;
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET);
-            res.send({token});
+            res.send({ token });
         })
 
-        const verifyAdmin = async(req, res, next) => {
+        const verifyAdmin = async (req, res, next) => {
             const email = req.decoded;
             console.log(email);
-            const query = {email: email} ;
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
-            if(user?.role !== "admin"){
-                return res.status(401).send({ error: true, message: "forbidden provided"});
+            if (user?.role !== "admin") {
+                return res.status(401).send({ error: true, message: "forbidden provided" });
             }
             next()
         }
 
         // users api 
 
-        app.get("/users",verifyJWT, async(req, res)=>{
-            const result =  await usersCollection.find().toArray();
-            res.send(result) ;
+        app.get("/users", verifyJWT, async (req, res) => {
+            const result = await usersCollection.find().toArray();
+            res.send(result);
         })
 
         app.get('/users/admin/:email', async (req, res) => {
             const email = req.params.email;
-      
+
             // if(req.decoded.email !== email){
             //   res.send({admin:false})
             // }
@@ -84,7 +86,7 @@ async function run() {
             const user = await usersCollection.findOne(query);
             // const result = { admin: user?.role === "admin" }
             res.send(user);
-          })
+        })
 
         // app.get("/users/admin:email",verifyJWT, async(req, res)=>{
         //     const email = req.params.email;
@@ -99,16 +101,16 @@ async function run() {
         //     res.send(result) ;
         // })
 
-        app.patch("/users/admin/:id", async (req, res) =>{
+        app.patch("/users/admin/:id", async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
-            $set: {
-                role: "admin"
-            },
-          };
-          const result = await usersCollection.updateOne(filter, updateDoc);
-          res.send(result);
+                $set: {
+                    role: "admin"
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
         })
 
         app.post("/users", async (req, res) => {
@@ -123,10 +125,10 @@ async function run() {
             res.send(result);
         });
 
-       
-        app.delete("/users/:id", async (req, res) =>{
+
+        app.delete("/users/:id", async (req, res) => {
             const id = req.params.id;
-            const user = {_id: new ObjectId(id)}
+            const user = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(user);
             res.send(result);
         })
@@ -138,41 +140,41 @@ async function run() {
             const filter = { role: "instructor" };
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
-            });
+        });
 
-        app.get("/users/instructor/:email", async(req, res)=>{
+        app.get("/users/instructor/:email", async (req, res) => {
             const email = req.params.email;
             console.log(email)
             // if(req.decoded !==email){
             //     res.send({instructor: false})
             // }
-            const query = {email: email} ;
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
             // const result = {instructor: user?.role === 'instructor'}
-            res.send(user) ;
+            res.send(user);
         })
-        app.get("/users/instructorClass/:email", async(req, res)=>{
+        app.get("/users/instructorClass/:email", async (req, res) => {
             const email = req.params.email;
             console.log(email)
             // if(req.decoded !==email){
             //     res.send({instructor: false})
             // }
-            const query = {instructorEmail: email} ;
+            const query = { instructorEmail: email };
             const user = await classesCollection.find(query).toArray();
             // const result = {instructor: user?.role === 'instructor'}
-            res.send(user) ;
+            res.send(user);
         })
 
-        app.patch("/users/instructor/:id", async (req, res) =>{
+        app.patch("/users/instructor/:id", async (req, res) => {
             const id = req.params.id;
-            const filter = {_id: new ObjectId(id)};
+            const filter = { _id: new ObjectId(id) };
             const updateDoc = {
-            $set: {
-                role: "instructor"
-            },
-          };
-          const result = await usersCollection.updateOne(filter, updateDoc);
-          res.send(result);
+                $set: {
+                    role: "instructor"
+                },
+            };
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
         })
 
 
@@ -187,47 +189,47 @@ async function run() {
         // admin apis 
 
 
-           app.patch("/classes/approve/:id", async (req, res) => {
+        app.patch("/classes/approve/:id", async (req, res) => {
             const id = req.params.id;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                status: "approved",
+                    status: "approved",
                 },
             };
             const result = await classesCollection.updateOne(filter, updateDoc);
             res.send(result);
-            });
+        });
 
 
 
-            
-            // app.patch("/classes/deny/:id", async (req, res) => {
-            // const id = req.params.id;
-            // const filter = { _id: new ObjectId(id) };
-            // const updateDoc = {
-            //     $set: {
-            //     status: "denied",
-            //     },
-            // };
-            // const result = await classesCollection.updateOne(filter, updateDoc);
-            // res.send(result);
-            // });
+
+        // app.patch("/classes/deny/:id", async (req, res) => {
+        // const id = req.params.id;
+        // const filter = { _id: new ObjectId(id) };
+        // const updateDoc = {
+        //     $set: {
+        //     status: "denied",
+        //     },
+        // };
+        // const result = await classesCollection.updateOne(filter, updateDoc);
+        // res.send(result);
+        // });
 
 
-            app.patch('/classes/feedback/:id', async (req, res) => {
-            const id= req.params.id;
-            const {feedback} = req.body;
+        app.patch('/classes/feedback/:id', async (req, res) => {
+            const id = req.params.id;
+            const { feedback } = req.body;
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                feedback: feedback,
+                    feedback: feedback,
                 },
             };
             const result = await classesCollection.updateOne(filter, updateDoc);
             res.send(result);
-            
-            })
+
+        })
 
         // app.patch("/admin/manageClasses/:id", async (req, res) => {
         //     const id = req.params.id;
@@ -253,12 +255,12 @@ async function run() {
             res.send(result);
         })
 
-        app.get("/products/:email", async(req, res)=>{
+        app.get("/products/:email", async (req, res) => {
             const email = req.params.email;
-            const query = {email: email}
+            const query = { email: email }
             const result = await productCollection.find(query).toArray();
             res.send(result)
-        } )
+        })
 
         app.post("/products", async (req, res) => {
             const product = req.body;
@@ -267,10 +269,18 @@ async function run() {
         })
 
 
-        app.delete("/products/:id", async (req, res) =>{
+        app.delete("/products/:id", async (req, res) => {
             const id = req.params.id;
-            const product = {_id: new ObjectId(id)}
+            const product = { _id: new ObjectId(id) }
             const result = await productCollection.deleteOne(product);
+            res.send(result);
+        })
+
+
+        // Fetured apis 
+
+        app.get("/fetured", async (req, res) => {
+            const result = await feturedCollection.find().toArray();
             res.send(result);
         })
 
@@ -282,40 +292,40 @@ async function run() {
             const newItem = req.body;
             const result = await classesCollection.insertOne(newItem);
             res.send(result);
-          });
+        });
 
         app.get("/users/instructor", async (req, res) => {
             const filter = { role: "instructor" };
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
-            });
+        });
 
 
         app.get("/users/instructor/:email", async (req, res) => {
             const email = req.params.email;
-            if(req.decoded !==email){
-                res.send({instructor: false})
+            if (req.decoded !== email) {
+                res.send({ instructor: false })
             }
-            const query = {email: email} ;
+            const query = { email: email };
             const user = await usersCollection.findOne(query);
-            const result = {admin: user?.role === 'instructor'}
-            res.send(result) ;
+            const result = { admin: user?.role === 'instructor' }
+            res.send(result);
         })
 
 
         // create payment intent 
 
         app.post("/create-payment-intent", async (req, res) => {
-            const {price} = req.body;
-            const amount = price*100;
+            const { price } = req.body;
+            const amount = price * 100;
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: "usd",
-                payment_method_types:['card']
-              });
-              res.send({
+                payment_method_types: ['card']
+            });
+            res.send({
                 clientSecret: paymentIntent.client_secret
-              })
+            })
         })
 
 
@@ -323,10 +333,10 @@ async function run() {
             const payment = req.body;
             const insertResult = await paymentCollection.insertOne(payment);
 
-            const query = {_id: {$in: payment.classesItems.map(id => new ObjectId(id))}}
+            const query = { _id: { $in: payment.classesItems.map(id => new ObjectId(id)) } }
             const deleteResult = await productCollection.deleteMany(query);
 
-            res.send({insertResult,deleteResult});
+            res.send({ insertResult, deleteResult });
         })
 
 
@@ -335,7 +345,7 @@ async function run() {
             const products = await productCollection.estimatedDocumentCount();
             const orders = await paymentCollection.estimatedDocumentCount();
             const payments = await paymentCollection.find().toArray();
-            const revinue = payments.reduce((sum, payment) => sum + payment.price,0) 
+            const revinue = payments.reduce((sum, payment) => sum + payment.price, 0)
             res.send({
                 revinue,
                 user,
