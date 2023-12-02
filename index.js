@@ -1,7 +1,7 @@
 const express = require("express");
+require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
-require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 5000;
@@ -42,7 +42,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
-        await client.connect();
+        // await client.connect();
 
         const classesCollection = client.db("fashionDesignDB").collection("classes")
         const usersCollection = client.db("fashionDesignDB").collection("users")
@@ -202,8 +202,6 @@ async function run() {
         });
 
 
-
-
         // app.patch("/classes/deny/:id", async (req, res) => {
         // const id = req.params.id;
         // const filter = { _id: new ObjectId(id) };
@@ -328,7 +326,6 @@ async function run() {
             })
         })
 
-
         app.post("/payments", async (req, res) => {
             const payment = req.body;
             const insertResult = await paymentCollection.insertOne(payment);
@@ -363,9 +360,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
 
 
 
