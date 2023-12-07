@@ -1,11 +1,12 @@
 const express = require("express");
 require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const app = express();
+const cors = require("cors");
 const jwt = require('jsonwebtoken');
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
+const app = express();
 const port = process.env.PORT || 5000;
-const cors = require("cors");
 
 // Middleware 
 app.use(cors());
